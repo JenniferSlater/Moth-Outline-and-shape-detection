@@ -2,8 +2,9 @@
 library(imager)
 
 #"C:/Users/slate/Desktop/Anavitrinella_pampinaria_727.JPG"
-#"C:/Users/slate/Pictures/Anavitrinella_pampinaria_727 - Copy (2).JPG"
+#"C:/Users/slate/Pictures/Anavitrinella_pampinaria_727 - Copy (2).JPG
 #"C:/Users/slate/Pictures/Cropped3.png"
+#CroppedXD.JPG
 mothp <-load.image("C:/Users/slate/Desktop/Eueretagrotis_sigmoides_629.JPG")
 moths <- imresize(mothp,scale=0.5)
 
@@ -26,7 +27,8 @@ gmoth <- grayscale(moths, drop = TRUE)
 plot(gmoth, main="Greyscale of Moth") 
 
 #Step 2 Gaussian Blur <--I found a way to set in imager :)
-bmoth<-isoblur(gmoth,3,neumann = TRUE, gaussian = TRUE, na.rm = FALSE)
+bmoth<-isoblur(gmoth,4,neumann = TRUE, gaussian = TRUE, na.rm = TRUE)
+
 plot(bmoth, main="Blurred Moth") 
 
 #step 2.5 side quest!!!
@@ -47,8 +49,9 @@ plot(Uncanny1, main="CannyEdges normal")
 
 Uncanny2 <- cannyEdges(gmoth, sigma=1)
 plot(Uncanny2, main="CannyEdges with gm")
-
 ##NORMAL WINS!!!
+
+#step 4
 #ok lets plot it
 coords <- which(Uncanny1, arr.ind = TRUE)
 wing_points2 <- data.frame(
@@ -68,18 +71,19 @@ ggplot(wing_points2, aes(x=xx2, y=yy2)) +
   ggtitle("moth ploted Canny Edges no reduction:))")
 
 
-#I think I could hypothetically convert this to a matrix but idk
+#I think I could hypothetically convert this to a matrix here but idk
 matrixz <- as.matrix(Uncanny1)
 print(matrixz)
-#bruhhhh its a Travelling salesman problem TwT 
+#bruhhhh its a Travelling salesman problem TwT (says google) 
 #lets put it in a data frame
 df <- as.data.frame(Uncanny1)
 print(df)
 #we only want the edge points but that is not something I can really do
 #BUT we PERSIST ON!!!
 head(df)
-colnames(df)
+colnames(df) #to check :)
 
+#step 5 CONNECT THE DOTSSS
 gimmeapoint<- as.matrix(df[,c("x","y")]) #<-dataframe, I do need to convert to matrix
 #x,y,z,cc
 #I only want it to give me x and y
@@ -87,7 +91,7 @@ gimmeapoint<- as.matrix(df[,c("x","y")]) #<-dataframe, I do need to convert to m
 print(gimmeapoint)
 #cool  it is looking good
 library(tidyverse) #gonna mess with data so prolly a good idea
-library(FNN) #Fast Nearest Neighbor Search
+library(FNN) #Fast Nearest Neighbor Search <--fingers crossed this is better
 
 #lets try this traveling sales man problem
 #what I want it to do...
@@ -118,10 +122,14 @@ while(nrow(unvisited)>0){ #<--while there are still points in unvisited
   unvisited<-unvisited[-nearestpoint,,drop=FALSE]
   head(unvisited)#<just to make sure its good
 }
+
 ggplot(path,aes(x=x,y=y))+
   geom_path(color = "blue") +
   theme_minimal()
 
 #AHHHHH IT WORKSSS!!!!
 
-
+#TODO WHAT I NEED TO ADD
+#- a rule where if can not jump too far and should break the line
+#- Better edge detection to not get patterns in wings
+#- filling in the moth shape
