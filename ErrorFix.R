@@ -114,14 +114,25 @@ while(nrow(unvisited)>0){ #<--while there are still points in unvisited
   letstrynewlibrary<- get.knnx(data=unvisited,query=mostrecentpt,k=1, algorithm = "kd_tree")
   #I may try out diffrent algorithms...DO NOT TRY COVER TREE IT CRASHED SO BADDD!!!
   # get.knnx(data, query, k=10, algorithm=c("kd_tree", "cover_tree", "CR", "brute"))
+  
   nearestpoint <- letstrynewlibrary$nn.index[1]
+  test<-letstrynewlibrary$nn.dist[1]
+
+  if (test>150){
+      maybenot<- nearestpoint 
+      unvisited<-unvisited[-nearestpoint,,drop=FALSE]}
+#Adding an if then statement to help me out :)
+#if it is a distance longer than 250 pixels, just get rid of it :)
+#130 seems like the minimum from what I can tell
+#going to 150 cause it works and there is prolly variation
+  else{
   
   #PUT IT ALL TOGETHER!!
-  path<-rbind(path,unvisited[nearestpoint,,drop=FALSE])
+    path<-rbind(path,unvisited[nearestpoint,,drop=FALSE])
   #bind_rows does not work for matrices apparently
-  unvisited<-unvisited[-nearestpoint,,drop=FALSE]
-  head(unvisited)#<just to make sure its good
-}
+    unvisited<-unvisited[-nearestpoint,,drop=FALSE]
+    head(unvisited)#<just to make sure its good
+}}
 
 ggplot(path,aes(x=x,y=y))+
   geom_path(color = "blue") +
