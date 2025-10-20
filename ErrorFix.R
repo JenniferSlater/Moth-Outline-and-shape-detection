@@ -141,6 +141,6 @@ ggplot(path,aes(x=x,y=y))+
 #AHHHHH IT WORKSSS!!!!
 
 #TODO WHAT I NEED TO ADD
-#- a rule where if can not jump too far and should break the line
 #- Better edge detection to not get patterns in wings
 #- filling in the moth shape
+
