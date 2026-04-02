@@ -469,16 +469,19 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   metadata<-read_exif("temp_moth.png")
   
   timetaken<-metadata$DateTimeOriginal
-  timetaken<-timetaken[is.na(timetaken)]<-0 #the should save the NULL as 0 :)
+  timetaken<-ifelse(is.null(timetaken),0,timetaken) #the should save the NULL as 0 :)
+  #https://www.educative.io/blog/what-is-isna-function-in-r
+  #my value was null tho not na
   
   filedate<-metadata$FileCreateDate #could be saved as this as well
-  filedate<-filedate[is.na(filedate)]<-0
+  filedate<-ifelse(is.null(filedate),0,filedate)
   
   locationx<-metadata$GPSLatitude 
-  locationx<-locationx[is.na(locationx)]<-0
+  locationx<-ifelse(is.null(locationx),0,locationx)
+  
   
   locationy<-metadata$GPSLongitude
-  locationy<-locationx[is.na(locationy)]<-0
+  locationy<-ifelse(is.null(locationy),0,locationy)
   
   #METADATA CAN BE ADDED PRETTY EASY NOW!!! <--If I want to use other info at some point 
   #-----------------------------------------------
@@ -500,5 +503,3 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   
   }#<----this is that csv loop
 write.csv(results_CSV,"Results_Moth.csv")
-
-
