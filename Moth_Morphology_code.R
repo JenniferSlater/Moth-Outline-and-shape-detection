@@ -445,7 +445,7 @@ for (i in 1:nrow(CSV_unknownMoths)) {
 
   yaydone <- colorpercentageee$Colornames[which.max(colorpercentageee$Percent)]    #Potential improvement (maybe should be top 3...)   
 #  print(yaydone)
-
+  #-----------------------------------------------
 
 #I am going to make this in a separate file so after you get your csv
 #now you can run my MOMOCS code
@@ -469,10 +469,17 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   metadata<-read_exif("temp_moth.png")
   
   timetaken<-metadata$DateTimeOriginal
+  timetaken<-timetaken[is.na(timetaken)]<-0 #the should save the NULL as 0 :)
+  
   filedate<-metadata$FileCreateDate #could be saved as this as well
+  filedate<-filedate[is.na(filedate)]<-0
+  
   locationx<-metadata$GPSLatitude 
+  locationx<-locationx[is.na(locationx)]<-0
+  
   locationy<-metadata$GPSLongitude
-  #the rest should save as NULL if we don't have it :)
+  locationy<-locationx[is.na(locationy)]<-0
+  
   #METADATA CAN BE ADDED PRETTY EASY NOW!!! <--If I want to use other info at some point 
   #-----------------------------------------------
   
@@ -493,6 +500,5 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   
   }#<----this is that csv loop
 write.csv(results_CSV,"Results_Moth.csv")
-
 
 
