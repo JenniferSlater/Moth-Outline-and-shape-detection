@@ -5,7 +5,6 @@
 #install.packages("smoothr")
 #install.packages("raster")
 #install.packages("exifr")
-#install.packages("momocs")
 
 #**SEE METADATA SECTION (YOU HAVE TO DOWNLOAD SOMETHING FOR THIS!!)
 #install.packages("exifr")
@@ -119,8 +118,8 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   coords <- which(Uncanny1, arr.ind = TRUE) #looks for true values
   
   wing_points2 <- data.frame(
-    yy2=coords[,1], #this will be my y corrd/row
-    xx2=coords[,2] #this will be my x coord/colum 
+    yy2=coords[,2], #this will be my y corrd/row
+    xx2=coords[,1] #this will be my x coord/colum 
   #they are flipped<--tested it with a graph
   )
 #str(coords)
@@ -156,7 +155,7 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   plot(path)
 
   #---------------MAKE INTO POLYGON--------------------------------------------------------
-#Step 7: CLOSE PATH
+#Step 7: CLOSE PATH <-- for polygon and binary map
   closedatpath<- rbind(path, path[1,])                                                       #Potential improvement (remove the jump this creates)      
   #contains 85 444 1 1
   #-----------------------------------------------
@@ -170,7 +169,7 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   geome<- st_sfc(st_polygon(list(as.matrix(closedatpath))))         
   ge_sf <- st_sf(geometry = geome)
 #I got an error, it says use st_zm() to drop m
-  ge<-st_zm(ge_sf)#<-- removes the m dimension (st_sf will add it and we don't want it)
+  ge<-st_zm(ge_sf, drop = TRUE, what = "ZM")#<-- removes the m dimension (st_sf will add it and we don't want it)
   
   #---------------USE SMOOTHR--------------------------------------------------------
 #Step 9: APPLY SMOOTHR CLEANING
@@ -189,7 +188,6 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   chosen_one <- smooth(mothfill, method = "chaikin", refinements = 3)
   plot(st_geometry(chosen_one), col = NA, border = "blue",lwd = 2,lty = 2,add = TRUE)
   
-  #############
   cordinates_Polygon <- st_coordinates(chosen_one)[,1:2]
   colnames(cordinates_Polygon) <- c("x","y")# <--this is really the only way ik how to do this
 #I should change in the future to update for moth name and family and...ect
@@ -220,7 +218,6 @@ for (i in 1:nrow(CSV_unknownMoths)) {
 
 #Step 12: COLOR RANGES
 #THESE ARE THE COLOR RANGES FOR THE HSV (we will need to tweak it eventually to fit with color correction)
-  #d
   white_mask <- ((H > 0) & (H < 160) &(S < 0.2)& (V > 0.8))
   black_mask <- (V < 0.2)
 #dim(black_mask)
@@ -363,7 +360,8 @@ for (i in 1:nrow(CSV_unknownMoths)) {
 #https://www.youtube.com/watch?v=m5WkLhjLqLo 
 #https://www.hslpicker.com/#ffffff <--Saved my lifeeee
 #hehe I can just use the ranges I used for the colorbar >:) 
-  white_moth <- ((S < 0.2)& (V > 0.6))
+  white_moth <- ((S < 0.1)& (V > 0.85))
+  grey_moth <- ((S < 0.2) & (V > 0.3) & (V <= 0.85))
   black_moth <- (V < 0.2)
 
 #double parenthisies cause I want it all to be included B)   (glad I caught that error)
@@ -375,7 +373,6 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   blue_moth <- ((H > 190) & (H < 260) & (S > 0.2)& (V > 0.2))
   purple_pink_moth<-((H > 260) & (H < 300) & (S > 0.2) &(V > 0.2))
 
-  grey_moth <- ((H > 0) & (H < 360)& (S < 0.2) & (S > 0.1) & (V > 0.25) & (V < 0.75))
   brown_moth <- ((H > 20) & (H < 45) & (S > 0.2) & (V > 0.2) & (V < 1))
   #-----------------------------------------------
 
@@ -445,12 +442,77 @@ for (i in 1:nrow(CSV_unknownMoths)) {
 
   yaydone <- colorpercentageee$Colornames[which.max(colorpercentageee$Percent)]    #Potential improvement (maybe should be top 3...)   
 #  print(yaydone)
+  #---------------FIND MOTH SHAPE----------------------------------------------
+
+  #Step 25: INSTALL PACKAGES
+  #Momocs was archived in March 2026, so now I need to go through R-tools to get it
+  #this turned out to be very tricky but I am glad I figures it out
+  #install.packages("de3vtools", dependencies = TRUE, INSTALL_opts = '--no-lock')
+  #library(devtools)
+  #install_version("Momocs", version = "1.5.0", repos = "http://cran.us.r-project.org",dependencies = TRUE)
+  #I need to install R-tools
+  #library(Momocs)
   #-----------------------------------------------
 
-#I am going to make this in a separate file so after you get your csv
-#now you can run my MOMOCS code
-  shape<-"triangle"
+  #following https://researchmap.jp/k_tateuchi/published_papers/32949627 <-- very helpful
+  #Step 26: LOAD IN KNOWN SHAPES
+  #shape<-"triangle" #prevent errors for rn
+  
+  #Alist<-list.files("C:/Users/slate/Desktop/Known Shapes",full.name=TRUE) #so first load in your data :)
+  #names<-read.csv("C:/Users/slate/Documents/Knownshapes.csv", header=TRUE)
+  #Shape_names<-names$Name
+  #the format they have is black sillohettes...so that is what I will use
+  
+  #import<-import_jpg(Alist,threshold = 0.7)#idk y we have a 0.7 threshold...
+  #Answer: Apparently it converts images to binary 70% white is filtered out
+  
+  #outlines<-Out(import) #get outlines
+  #outlines$fac <- data.frame(Name = as.factor(names$Name))
+  #as long as the file images order matches with the csv of names we should be fine :)
+  
+  #pile(outlines)
+  #panel(outlines,names=TRUE) #happy that the names match up :)
+  
+  # Close, center, scale
+  #shapeS <- outlines %>% coo_center() %>% coo_scale() %>% coo_slidedirection() 
 
+  # Plot overlapped shapes
+  #pile(shapeS)
+  
+  #-----------------------------------------------
+  #Step 27:Unknown outline
+  
+  #moth_shape<-list(cordinates_Polygon) #this was from polygon step :)
+  #maybe I want to use the open outlines cayse that is an option to use for momocs
+  
+  #Unknownoutlines<-Out(moth_shape)
+  #Unknownoutlines$fac<- data.frame(Name = "Unkown")#spell it out to code to prevent errors :)
+  
+  #shapeD <- Unknownoutlines %>% coo_center() %>% coo_scale() %>% coo_slidedirection() 
+  
+  #pile(shapeD)
+  #-----------------------------------------------
+  
+  #Step 28: Follow https://momx.github.io/Momocs/ example pipeline
+
+    #known <- efourier(shapeS,6, norm=FALSE) 
+    #pca_K <- PCA(known)
+    #model<-LDA(pca_K,~Name)
+    #plot_LDA(model)
+
+    #unknown <- efourier(shapeD,6, norm=FALSE) 
+    #pca_UK <- PCA(unknown)
+    
+    #predict(model,newdata=pca_UK)
+  
+ # ef <- efourier(compare, nb.h = 10)
+  
+ # pca <- PCA(ef)
+ # plot_PCA(pca)
+  
+ # lda_res <- LDA(ef)
+ # predict(lda_res, newdata = ef)
+  
 #---------------MetaDATA-------------------------------
 #https://www.youtube.com/watch?v=SCT4o4vz97o                                 #Potential improvement (if statement,so if you don't install that you can still run it )  
 #literally just watched videos on how to do this :)
@@ -465,6 +527,7 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   file.exists("temp_moth.png")
   
   library("exifr") #allows us to see metadata
+  
   configure_exiftool("C:/Program Files/Exiftool/exiftool.exe") 
   metadata<-read_exif("temp_moth.png")
   
@@ -493,7 +556,6 @@ for (i in 1:nrow(CSV_unknownMoths)) {
     Width=moth_width_cm,
     Height=moth_height_cm,
     Color=yaydone,
-    Shape=shape,
     File_Date=filedate,
     Time_Taken=timetaken,
     Location_X=locationx,
@@ -502,4 +564,6 @@ for (i in 1:nrow(CSV_unknownMoths)) {
   results_CSV<-rbind(results_CSV,new_row)
   
   }#<----this is that csv loop
+
 write.csv(results_CSV,"Results_Moth.csv")
+
