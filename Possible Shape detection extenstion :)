@@ -1,0 +1,230 @@
+#Stuff to install :)
+#install.packages("imager")
+#install.packages("FNN")
+#install.packages("sf")
+#install.packages("smoothr")
+#install.packages("raster")
+#install.packages("exifr")
+
+#**SEE METADATA SECTION (YOU HAVE TO DOWNLOAD SOMETHING FOR THIS!!)
+#install.packages("exifr")
+
+library(imager)
+library(ggplot2)
+#Load images from github :)
+#---------------CREATE RESULTS CSV TO SAVE TO--------------------------------------------------- 
+#just setting up what I want the csv to have outside the for loop
+results_CSV<-data.frame(
+  Moth_URL=character(),
+  Color_URL=character(),
+  Width=numeric(),
+  Height=numeric(),
+  Color=character(),
+  Shape=character(),
+  File_Date=character(),
+  Time_Taken=character(),
+  Location_X=character(),
+  Location_Y=character()
+)
+#---------------------LOAD IN UNKNOWN MOTH CSV---------------------------------------------------
+#ok so I made a csv to make this process easier
+#I will have the program go through the csv and save the coordinates, as well as the size and color
+#Then I will do the same with known shapes and I will use those to help with momocs
+#If I get that far...
+CSV_unknownMoths<-read.csv("C:/Users/slate/Desktop/UnknownMothTest.csv", header=TRUE)
+
+for (i in 1:nrow(CSV_unknownMoths)) {
+  mURL <- CSV_unknownMoths$Moth_URL[i]
+  cURL <- CSV_unknownMoths$Color_URL[i]
+  
+  moth<-load.image(mURL)           #If it says can't load CHECK YOUR CONNECTION to the internet
+  colorscale<-load.image(cURL)
+  
+  #----------------------FIX PNGS ----------------------------------------------------  
+  #IF YOU HAVE JPEGS COMMENT THIS OUT, THIS IS FOR PNGS!!!!!!!!!!!
+  #I forgot that I have an issue with pngs...
+  #we r gonna try to error fix cause that was a lot of work I don't want to redo...
+  #last time I had an issue cause png's have 4 color channels
+  #(x,y,c<--colorchannel,z<--frames)
+  #inside c we have RGB and alpha
+  
+  # alphs is just extra info so I am going to TRY to eliminate it
+  #IF YOU HAVE AN ERROR AT THIS STAGE LOOK AT THE DIM, YOU WANT 3!!!!
+  #https://cran.r-project.org/web/packages/recolorize/vignettes/step01_loading.html
+  #KEEP ONLY X,Y,C
+  #684 584   1   4                                        123 4
+  moth<-moth[ , , ,-4] #include everything except 4 (in the RBG ALPHA)
+  moth<-drop(moth)#removes 1's and cause the png Z is 1 it should work
+  #The error continues....
+  
+  moth <- as.cimg(moth)#I think it must not be recognized as an image (sees it as an array) anymore so I am going to remake it as an image
+  
+  colorscale <- colorscale[ , , ,-4]
+  colorscale<-drop(colorscale)
+  colorscale <- as.cimg(colorscale)
+  #AHHHH IT WORKED :)))))
+  
+  #--------------------INDIVIDUAL IMAGES-----------------------------------
+  #if you want to do a individual image, this is how you do it...
+  #moth <- load.image("C:/Users/slate/Desktop/colorbar (2).JPG")
+  #plot(moth,main="Color Scale") 
+  
+  #colorscale <- load.image("C:/Users/slate/Desktop/colorbar (2).JPG")
+  #plot(colorscale,main="Color Scale") 
+  
+  #---------------CANNY EDGE DETECTION--------------------------------------------------------
+  
+  #Step 1: TURN TO GREYSCALE
+  #https://justin-liang.com/tutorials/canny/ 
+  gmoth <- grayscale(moth)
+  #plot(gmoth, main="Greyscale of Moth")
+  #-----------------------------------------------
+  
+  #Step 2: GAUSSIAN BLUR 
+  #so it very varied for me if the moth image was small
+  #bmoth<-isoblur(gmoth,5,neumann = TRUE, gaussian = TRUE, na.rm = TRUE)
+  
+  #calling for the x and y from this x,y,c<--colorchannel
+  Imagex<-dim(gmoth)[1] #x 
+  Imagey<-dim(gmoth)[2] #y
+  #print(Imagex)
+  #print (ImageY)<--quick cutesy little test
+  
+  #this basically will look @the height of pixels 
+  #Imagex*Imagey<--total pixels
+  #I don't really want the total area, I square rooted it so I had less to work with
+  blurcalc<-sqrt(Imagex*Imagey)*0.03 #<-- the higher the number the more blur
+  print(blurcalc)
+  
+  bmoth<-isoblur(gmoth,blurcalc,neumann = TRUE, gaussian = TRUE)
+  plot(bmoth, main="Moth with Gaussian Blur")
+  #so IDEALLY this should change with the pixel number
+  #-----------------------------------------------
+  
+  #step 3: CANNY EDGE DETECTION
+  #https://blog.roboflow.com/edge-detection/
+  #Gradient magnitude did not work that well, it is not worth further exploring 
+  Uncanny1 <- cannyEdges(bmoth, sigma=blurcalc)
+  #a smaller <(0.5-1) sigma willperserve the find details
+  #a larger sigma >2 is agressive and blurs edges (it may merge close edges)
+  #I honestly want a really agressive edge detection
+  #I tried the blurcalc with it and it works pretty good
+  plot(Uncanny1, main="CannyEdges normal")
+  #-----------------------------------------------                             Potential improvment (expanding and shrinking pixels)
+  
+  #Step 5: TURN INTO DATASET
+  # I found out for fnn to work I need to make it into a numeric matrix
+  #cause right now it is just a bunch of true and false values
+  coords <- which(Uncanny1, arr.ind = TRUE) #looks for true values
+  
+  wing_points2 <- data.frame(
+    yy2=coords[,2], #this will be my y corrd/row
+    xx2=coords[,1] #this will be my x coord/colum 
+    #they are flipped<--tested it with a graph
+  )
+  #str(coords)
+  
+  #---------------FASTEST NEAREST NEIGHBOR--------------------------------------------------------
+  
+  #step 6: CONNECT WITH FNN
+  library(FNN) #Fast Nearest Neighbor Search
+  
+  #I want to essentially take a point and remove it from the dataset
+  unvisited_point<-coords#<--I want to start off with all the info in the matrix being marked as unvisited
+  path<-unvisited_point[1,,drop=FALSE]#<--starting with the first point off the list!
+  
+  while(nrow(unvisited_point)>0){ #<--while there are still points in unvisited
+    mostrecentpt<-(tail(path,1))#<stores the last point, and 1 just makes it a single object:)
+    
+    Fnnlib<- get.knnx(data=unvisited_point,query=mostrecentpt,k=1, algorithm = "kd_tree")
+    #k should be less than sample size!
+    #https://www.rdocumentation.org/packages/FNN/versions/1.1.4.1
+    #I may try out diffrent algorithms...DO NOT TRY COVER TREE IT CRASHED SO BADDD!!!
+    # get.knnx(data, query, k=10, algorithm=c("kd_tree", "cover_tree", "CR", "brute"))
+    
+    nearestpoint <- Fnnlib$nn.index[1]
+    test<-Fnnlib$nn.dist[1]
+    
+    #lets put it all together :)
+    path<-rbind(path,unvisited_point[nearestpoint,,drop=FALSE])
+    #bind_rows does not work for matrices apparently
+    unvisited_point<-unvisited_point[-nearestpoint,,drop=FALSE]
+    #head(unvisited)#<just to make sure its good
+  }
+  #visualize it
+  plot(path)
+  
+  #---------------MAKE INTO POLYGON--------------------------------------------------------
+  #Step 7: CLOSE PATH <-- for polygon and binary map
+  closedatpath<- rbind(path, path[1,])                                                       #Potential improvement (remove the jump this creates)      
+  #contains 85 444 1 1
+  #-----------------------------------------------
+  
+  #Step 8: CONVERT TO SF POLYGON
+  #so smooth r works on sf geometrics not matrices
+  library(sf) #I think I want to convert to polygon...
+  
+  ##https://mgimond.github.io/Spatial/anatomy-of-simple-feature-objects.html
+  ##https://www.youtube.com/watch?v=BgsN-tpolZM&t=272s
+  geome<- st_sfc(st_polygon(list(as.matrix(closedatpath))))         
+  ge_sf <- st_sf(geometry = geome)
+  #I got an error, it says use st_zm() to drop m
+  ge<-st_zm(ge_sf, drop = TRUE, what = "ZM")#<-- removes the m dimension (st_sf will add it and we don't want it)
+  
+  #---------------USE SMOOTHR--------------------------------------------------------
+  #Step 9: APPLY SMOOTHR CLEANING
+  #essentially this should help with removing islands and simplifying the overall shape
+  #https://github.com/mstrimas/smoothr
+  library(smoothr)
+  polgeo1 <- st_simplify(ge, dTolerance = 4)
+  plot(polgeo1, border = "black", main = "simplify")
+  
+  crumbs <- drop_crumbs(polgeo1, threshold = 100)
+  
+  #the it will not fill anything without the plots being simplified first
+  mothfill <- fill_holes(crumbs, threshold = 100)
+  plot(mothfill, col = "black", main = "Filled Gaps")
+  
+  chosen_one <- smooth(mothfill, method = "chaikin", refinements = 3)
+  plot(st_geometry(chosen_one), col = NA, border = "blue",lwd = 2,lty = 2,add = TRUE)
+  
+  cordinates_Polygon <- st_coordinates(chosen_one)[,1:2]
+  cordinates_Polygon<-as.data.frame(cordinates_Polygon)
+  colnames(cordinates_Polygon)<- c("x","y")# <--this is really the only way ik how to do this
+  #I should change in the future to update for moth name and family and...ect
+  plot(cordinates_Polygon)
+
+  #https://stackoverflow.com/questions/62250151/calculate-curvature-of-a-closed-object-in-r
+  #1. I first need to find path length (in units)
+  #how the distances between points are changing
+  distx<-diff(c(cordinates_Polygon$x,cordinates_Polygon$x[1]))# Distance between x coords with wrap-around
+  # we want the wrap around cause what can happen is that the first and last data points won't get measured without it :)
+  disty<-diff(c(cordinates_Polygon$y,cordinates_Polygon$y[1]))
+  
+  #the stack overflow looks at the segment size and ratio so I will do that too :)
+  segment_size<-sqrt(distx^2+disty^2)
+  #ok so now x y ratio
+  xratio<-distx/disty
+  yratio<-disty/distx
+  
+  #Mean segment length
+  meansegment<-(segment_size+c(segment_size[-1],segment_size[1]))/2
+  
+  #ok so add the change in the x/y ratio per unit length
+  cordinates_Polygon$Cx <- diff(c(xratio, xratio[1]))/meansegment
+  cordinates_Polygon$Cy <- diff(c(yratio, yratio[1]))/meansegment
+  #plot(cordinates_Polygon)
+  
+  cordinates_Polygon$K <- (yratio * cordinates_Polygon$Cx - xratio * cordinates_Polygon$Cy)/
+    ((xratio^2 + yratio^2)^(3/2))
+  plot(cordinates_Polygon$K)
+  #2. First dervivative 
+# exclude row 1 and row 10
+  #(y3-y1)/(x3-x1)
+  
+  #3. Secondary derivative 
+  #(y3'-y1')/(x3-x1)
+  
+  #4 k curvature is (x'y''-y'x'')/(x'^2+y'^2)^3/2
+  
+}
