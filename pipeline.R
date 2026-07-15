@@ -58,11 +58,12 @@ run_pipeline <- function(csv,
       
       #CANNY EDGE DETECTION
       canny_moth<-cannyEdges(blur_moth,sigma=blur)
+      #I am using that same blur varibale for this since it changes with size
       lines<-which(canny_moth, arr.ind = TRUE) 
       if (nrow(lines)==0){ #If we can't see anything, just mark as true
         message("moth in",mURL,"undetected")
         next}
-      cat("Canny edge detection worked!\n")
+      cat("Canny edge detection worked!\n") #yay!!
       
       hull<-concaveman(lines, concavity = 4, length_threshold = 0)
       #hull is a matrix with 4 colums [1] 483   4
@@ -84,7 +85,7 @@ run_pipeline <- function(csv,
       
       #plotting raster image 
       
-      # create blank raster layer
+      # create blank raster layer                 #needs to match image dimentions 
       blank_canvas<-raster(nrows=image_height, ncols=image_width, xmn=0, xmx=image_width, ymn=0, ymx=image_height)
       
       #rasterImage(image, xleft, ybottom, xright, ytop, angle = 0, interpolate = TRUE, ...)
@@ -120,12 +121,13 @@ run_pipeline <- function(csv,
       #Adding other pretty colors :)
       #https://www.workwithcolor.com/yellow-green-color-hue-range-01.htm
       #If we look at a color like red it is both at 360 and 0, so I put an OR statement(that's y the line)
-      #basically from 0-30 OR 306-330
+      
+      #I got tires of trying to figure out all the saturations and values for this
       exclution<- !(black_mask)&!(dark_grey_mask)&!(grey_mask)&!(light_grey_mask)&!(white_mask)
       
       red_mask<- (((H>=0)&(H<=10))|((H>355)&(H<=360)))&exclution
       red_orange_mask<- ((H>10)&(H<=20))&!(black_mask)&exclution
-      orange_brown_mask<-((H>=20)&(H<41))&exclution
+      orange_brown_mask<-((H>=20)&(H<41))&exclution   #It would be nice to in the future to add tans and browns (that would need to mess with V tho)
       orange_yellow_mask<-((H>=41)&(H<=50))&exclution
       yellow_mask<- ((H>50)&(H<=60))&exclution
       yellow_green_mask<- ((H>60)&(H<=80))&exclution
@@ -133,6 +135,7 @@ run_pipeline <- function(csv,
       green_cyan_mask<- ((H>140)&(H<=169))&exclution
       cyan_mask<- ((H>169)&(H<=200))&exclution
       cyan_blue_mask<- ((H>200)&(H<=220))&exclution
+      #I would be shocked it a moth was one of these colors, but gotta follow through (maybe could help indicate issue with lighting)
       blue_mask<- ((H>220)&(H<=240))&exclution
       purple_mask<- ((H>240)&(H<=280))&exclution
       magenta_mask<- ((H>280)&(H<=320))&exclution
@@ -141,7 +144,8 @@ run_pipeline <- function(csv,
       pink_red_mask<- ((H>345)&(H<=355))&exclution
       #-----------------------------------------------
 # black, white, dark_grey, grey, brown , red, red_orange, orange, orange_yellow, yellow, yellow_green, green, green_cyan, cyan, cyan_blue, blue, purple, magenta, magenta_pink ,pink, pink_red     
-      black<- (black_mask) & (binary_field[]==1)
+      #REMEMBER TO COMMENT ALL PLOTS OUT EVENTUALLY!!!
+      black<- (black_mask) & (binary_field[]==1) #want the field to be true :)
       plot(black,main="black")
       
       white<- (white_mask) & (binary_field[]==1)
@@ -182,35 +186,35 @@ run_pipeline <- function(csv,
       plot(green_cyan, main="green_cyan")
       
       cyan<-(cyan_mask) & (binary_field[]==1)
-      plot(cyan, main="cyan")
+      #plot(cyan, main="cyan")
       
       cyan_blue<- (cyan_blue_mask) & (binary_field[]==1)
-      plot(cyan_blue, main="cyan_blue")
+      #plot(cyan_blue, main="cyan_blue")
       
       blue<- (blue_mask) & (binary_field[]==1)
-      plot(blue, main="blue")
+      #plot(blue, main="blue")
       
       purple<- (purple_mask) & (binary_field[]==1)
-      plot(purple, main="purple")
+      #plot(purple, main="purple")
       
       magenta<-(magenta_mask) & (binary_field[]==1)
-      plot(magenta, main="magenta")
+      #plot(magenta, main="magenta")
       
       magenta_pink <-(magenta_pink_mask) & (binary_field[]==1)
-      plot(magenta_pink, main="magenta_pink")
+      #plot(magenta_pink, main="magenta_pink")
       
       pink<-(pink_mask) & (binary_field[]==1)
-      plot(pink, main="pink")
+      #plot(pink, main="pink")
       
       pink_red<-(pink_red_mask) & (binary_field[]==1)
-      plot(pink_red, main="pink_red")
+      #plot(pink_red, main="pink_red")
     
       cat("Colors were found!\n")
     #YAY I am very happy with this so far :)
       #-----------------------------------------------
       #Number of pixels
       binary<-(binary_field==1)
-      pixel_count<-cellStats(binary,"sum")
+      pixel_count<-cellStats(binary,"sum") #wow that was easy ;-;
       cat(pixel_count,"is total pixels\n")
       
       #Quantify colors 
@@ -246,60 +250,34 @@ run_pipeline <- function(csv,
       #I want the answer to be 0
       #If it is a negative there must be an overlap with the color ranges
       #If it is positive the color ranges do not catch enough
-      
       Top_color<-Color_percentages$Color_names[which.max(Color_percentages$Amount)]
       cat("The top color is",Top_color,"\n")
+      
+      #error  check!!!
       xx<-summary(H)
-      cat("summary H",xx,"\n")
+      #cat("summary H",xx,"\n")
       xx<-summary(S)
-      cat("summary S",xx,"\n")
+      #cat("summary S",xx,"\n")
       xx<-summary(V)
-      cat("summary V",xx,"\n")
+      #cat("summary V",xx,"\n")
       ay<-range(H)
       yy<-range(S)
       cc<-range(V)
-      cat("H",ay,"S",yy,"v",cc,"\n")
+      #cat("H",ay,"S",yy,"v",cc,"\n")
       
       # I am pretty happy with this so I am ok with 
-      width_pixel_conversion<-box_width/true_width
-      height_pixel_conversion<-box_heigh/true_height
-      cat(width_pixel_conversion, "px/measure")
-      cat(height_pixel_conversion, "px/measure")
+      width_pixel_conversion<-true_width/box_width
+      height_pixel_conversion<-true_height/box_height
+      cat(width_pixel_conversion, "px/measure\n")
+      cat(height_pixel_conversion, "px/measure\n")
       
       area_of_moth<-((width_pixel_conversion+height_pixel_conversion)/2)*pixel_count
-      cat("the area of the moth is", area_of_moth,"!")
+      cat("the surface area of the moth is", area_of_moth,"!\n")
+      moth_width_cm <- max((hull_x)*width_pixel_conversion) - min((hull_x)*width_pixel_conversion)
+      cat("the moth width is", moth_width_cm,"!\n")
+      moth_height_cm <- max((hull_y)*height_pixel_conversion) - min((hull_y)*height_pixel_conversion)
+      cat("the moth height is", moth_height_cm,"!\n")
+      
       
     
-      #---------------MetaDATA-------------------------------
-      #https://www.youtube.com/watch?v=SCT4o4vz97o 
-      #literally just watched videos on how to do this :)
-      #https://www.youtube.com/watch?v=Ku1Nx-kl7RM
-      #follow comment thats says" For those who are doing this a few years later and are running 
-      #into the "Could not find C:\Program Files (x86)\Exiftool\exiftool_files\perl5*.dll" or something 
-      #similar, just remember to also copy over the exiftool_files folder from the download."
-      
-      #https://cran.r-project.org/web/packages/exifr/index.html<--YOU NEED TO DOWNLOAD THIS
-      moth<-mURL #get the URL
-      download.file(moth, "temp_moth.png", mode = "wb") #Tenporarily download it :)
-      file.exists("temp_moth.png")
-      
-      library("exifr") #allows us to see metadata
-      
-      configure_exiftool("C:/Program Files/Exiftool/exiftool.exe") 
-      metadata<-read_exif("temp_moth.png")
-      
-      timetaken<-metadata$DateTimeOriginal
-      timetaken<-ifelse(is.null(timetaken),0,timetaken) #the should save the NULL as 0 :)
-      #https://www.educative.io/blog/what-is-isna-function-in-r
-      #my value was null tho not na
-      
-      filedate<-metadata$FileCreateDate #could be saved as this as well
-      filedate<-ifelse(is.null(filedate),0,filedate)
-      
-      locationx<-metadata$GPSLatitude 
-      locationx<-ifelse(is.null(locationx),0,locationx)
-      
-      
-      locationy<-metadata$GPSLongitude
-      locationy<-ifelse(is.null(locationy),0,locationy)
   }}}
