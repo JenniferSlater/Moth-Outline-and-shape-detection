@@ -6,7 +6,7 @@ library(exif)
 
 #set up csv
 CSV_results<-data.frame(
-  Moth_URl=character(),
+  Moth_URL=character(),
   Surface_area=numeric(),
   Width=numeric(),
   Height=numeric(),
@@ -31,6 +31,8 @@ run_pipeline <- function(csv,
                          box_width,
                          box_height) {
   
+  
+  #For the moth box we are going to say that it is 6 inches by 1 inch
   cat("True width:", true_width, "user's measurment\n")
   cat("True height:", true_height, "user's measurment\n")
   cat("Box width:", box_width, "px\n")
@@ -44,10 +46,19 @@ run_pipeline <- function(csv,
   }
   
   else {
-    #The conversion should be based on the first image in the csv since that is what the users use 
-    mURL <- file.path("www",data$Moth_URL[1])
+    # I want to make it so it could be accessed on or offline
+    if (grepl("https", data$Moth_URL[1])){
+      mURL<- data$Moth_URL[1]
+    }
+    
+    else{
+      mURL <- file.path("www",data$Moth_URL[1])
+      #basically the www/ makes filed avalible to the browser
+    }
+    
     moth<-load.image(mURL)
     
+    #The conversion should be based on the first image in the csv since that is what the users use
     image_width<-dim(moth)[1]
     image_height<-dim(moth)[2]
     
@@ -122,6 +133,7 @@ run_pipeline <- function(csv,
       poly<-Polygon(cbind(hull_x, hull_y))
       ps<-Polygons(list(poly),1)
       sps<-SpatialPolygons(list(ps))
+      
       plot(sps,xlim=c(0,image_width), ylim=c(0,image_height), main="polygon") #ok perfect it is plotted :)
       cat("Polygon worked!\n")
       
@@ -324,7 +336,7 @@ run_pipeline <- function(csv,
       moth_height_cm <- ((max(hull_y) - min(hull_y))*height_pixel_conversion)
       cat("the moth height is", moth_height_cm,"units!\n")
       
-      metadata1<-read_exif(mURL)
+      metadata<-read_exif(mURL)
       
       CSV_results <- rbind(
         CSV_results,
@@ -335,17 +347,17 @@ run_pipeline <- function(csv,
           Width<-moth_width_cm,
           Height<-moth_height_cm,
           Color_1<-Top_C,
-          Color_1_P<- Top_A,
+          Color_1_P<- ceiling(Top_A), #I am just gonna have them round up so it is easier
           Color_2<-Second_C,
-          Color_2_P<-Second_A,
+          Color_2_P<-ceiling(Second_A),
           Color_3<-Third_C,
-          Color_3_P<-Third_A,
+          Color_3_P<-ceiling(Third_A),
           Shape_X<-paste(hull_x,collapse=";"),
           Shape_Y<-paste(hull_y,collapse=";"),
           File_date<-metadata$timestamp,
           Time_taken<- metadata$origin_timestamp,
-          Location_X<- metadata1$longitude,
-          Location_Y<-metadata1$latitude
+          Location_X<- metadata$longitude,
+          Location_Y<-metadata$latitude
         ))
       
     }}
@@ -354,5 +366,6 @@ run_pipeline <- function(csv,
   
   
   }
+
 
 
