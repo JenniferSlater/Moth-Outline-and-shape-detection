@@ -46,7 +46,10 @@ run_pipeline <- function(csv,
   }
   
   else {
+
+    
     # I want to make it so it could be accessed on or offline
+
     if (grepl("https", data$Moth_URL[1])){
       mURL<- data$Moth_URL[1]
     }
@@ -366,6 +369,5 @@ run_pipeline <- function(csv,
   
   
   }
-
 
 
