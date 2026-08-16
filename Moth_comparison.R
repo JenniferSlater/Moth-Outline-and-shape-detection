@@ -71,12 +71,12 @@ Lovley_moths<-translate%>%
       #remove the column named ID, and so on 
 
     #my_matrix[, colnames(my_matrix) != 'A']
-Lovley_moths[[1]] #YAYYYYY
+#Lovley_moths[[1]] #YAYYYYY
 #Ok now I want to use the OUT object
 #this is the fac value that lets me seperate the outlines :)
 Moth_ID_List<-data.frame(unique(translate$ID)) #I think it needs to be a dataframe
 
-Cute_moth_outlines<-Out(Lovley_moths,Moth_ID_List)
+Cute_moth_outlines<-Out(Lovley_moths,fac=Moth_ID_List)
 #list(translate$ID) #I want to remove the repeating numbers
 
 #Lets just see them real quick 
@@ -85,3 +85,31 @@ panel(Cute_moth_outlines) #some points look rough but honestly it looks pretty n
 
 #invalid "xlim" value 
 #The error apparently can happen if it is "Non-Numeric Data"
+
+#So I cannot use the proctustes b/c there are no landmarks!
+stack(Cute_moth_outlines)
+
+#https://momx.github.io/Momocs/reference/efourier.html
+#coo <- Cute_moth_outlines[2]
+#coo_plot(coo)
+#ef <- efourier(coo, 12)
+#efourier(coo, 12, norm=TRUE)
+#efi <- efourier_i(ef)
+#coo_draw(efi, border='red', col=NA)
+
+pls_work<- efourier(Cute_moth_outlines,nb.h= 12)
+
+#nb.h=The number of harmonics to use
+#smooth.it=The number of smoothing iterations to perform
+#norm= whether or not to normalize the coefficents \
+#- if they look upsidedown, align the outlines b4 hand and turn norm as false
+#start= consider the first point to all be the same 
+
+tunnel_light<-PCA(pls_work)
+tunnel_light
+plot(tunnel_light) #OMG IT WORKEDDD
+
+#ok but BUT I think we have a problem, unlike the bottle image these moths are facing diffrent directions...
+#I should prolly fix this... but HOW 
+
+#Kmeans!
