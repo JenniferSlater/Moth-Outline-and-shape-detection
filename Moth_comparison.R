@@ -27,8 +27,8 @@ for(i in 1:nrow(moths)){
   
   #I got an error, I guess I need to define my X nd Y as numberic
   
-  translate$X <- as.numeric(translate$X)
-  translate$Y <- as.numeric(translate$Y)
+  seperate$X <- as.numeric(seperate$X)
+  seperate$Y <- as.numeric(seperate$Y)
   seperate$ID <- i #make sure we can differentiate the moths
   
   translate<- rbind(translate,seperate)
@@ -76,9 +76,12 @@ Lovley_moths[[1]] #YAYYYYY
 #this is the fac value that lets me seperate the outlines :)
 Moth_ID_List<-data.frame(unique(translate$ID)) #I think it needs to be a dataframe
 
-Cute_moth_outlines<-Out(Lovley_moths, Moth_ID_List)
+Cute_moth_outlines<-Out(Lovley_moths,Moth_ID_List)
 #list(translate$ID) #I want to remove the repeating numbers
 
 #Lets just see them real quick 
+panel(Cute_moth_outlines) #some points look rough but honestly it looks pretty nice!
+#Cute_moth_outlines[1] %>% coo_plot() #cool!
 
-stack(Lovley_moths, fac=Moth_ID_List)
+#invalid "xlim" value 
+#The error apparently can happen if it is "Non-Numeric Data"
