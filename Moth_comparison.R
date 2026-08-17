@@ -23,7 +23,7 @@ for(i in 1:nrow(moths)){
     #It is called a pipe! (yay :D)
     separate_longer_delim(coords, delim = ";")%>% 
     separate_wider_delim(coords, delim = " ", names = c("X", "Y"))
-    #https://tidyr.tidyverse.org/reference/separate_longer_delim.html
+  #https://tidyr.tidyverse.org/reference/separate_longer_delim.html
   
   #I got an error, I guess I need to define my X nd Y as numberic
   
@@ -33,7 +33,7 @@ for(i in 1:nrow(moths)){
   
   translate<- rbind(translate,seperate)
 }
- 
+
 #Ok so now I am gonna try to use MOMOCS AGAIN!!!
 #quick definitions for me to remember
 #- COO: (x,y)<-- coordinat based
@@ -67,10 +67,10 @@ Lovley_moths<-translate%>%
   #I probally didn't need to do (.,.$ID) or (.,as.matrix) cause the dataset is already established
   lapply(as.matrix)%>% #I okly want X and Y in the matrix not the ID
   lapply(.,function(yay) {yay[, colnames(yay) != "ID"]})
-      #the function will let me temporarily call each list and say for the first list 
-      #remove the column named ID, and so on 
+#the function will let me temporarily call each list and say for the first list 
+#remove the column named ID, and so on 
 
-    #my_matrix[, colnames(my_matrix) != 'A']
+#my_matrix[, colnames(my_matrix) != 'A']
 #Lovley_moths[[1]] #YAYYYYY
 #Ok now I want to use the OUT object
 #this is the fac value that lets me seperate the outlines :)
@@ -80,7 +80,7 @@ Cute_moth_outlines<-Out(Lovley_moths,fac=Moth_ID_List)
 #list(translate$ID) #I want to remove the repeating numbers
 
 #Lets just see them real quick 
-panel(Cute_moth_outlines) #some points look rough but honestly it looks pretty nice!
+panel(Cute_moth_outlines )#some points look rough but honestly it looks pretty nice!
 #Cute_moth_outlines[1] %>% coo_plot() #cool!
 
 #invalid "xlim" value 
@@ -96,8 +96,12 @@ stack(Cute_moth_outlines)
 #efourier(coo, 12, norm=TRUE)
 #efi <- efourier_i(ef)
 #coo_draw(efi, border='red', col=NA)
+maybe<-coo_alignxax(Cute_moth_outlines)
+stack(maybe)
+m<-coo_slidedirection(maybe,"right")
 
-pls_work<- efourier(Cute_moth_outlines,nb.h= 12)
+stack(m)
+pls_work<- efourier(m,nb.h= 12,norm=TRUE)
 
 #nb.h=The number of harmonics to use
 #smooth.it=The number of smoothing iterations to perform
@@ -107,9 +111,9 @@ pls_work<- efourier(Cute_moth_outlines,nb.h= 12)
 
 tunnel_light<-PCA(pls_work)
 tunnel_light
-plot(tunnel_light) #OMG IT WORKEDDD
+plot(tunnel_light,pos.shp="xy",labelspoint=TRUE) #OMG IT WORKEDDD
 
 #ok but BUT I think we have a problem, unlike the bottle image these moths are facing diffrent directions...
 #I should prolly fix this... but HOW 
+#can I say anything on one side of the graph, flip to the other side?
 
-#Kmeans!
