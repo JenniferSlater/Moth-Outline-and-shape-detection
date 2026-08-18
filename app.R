@@ -1,5 +1,8 @@
 library(shiny)
 library(bslib)
+library(tidyr)
+library(Momocs)
+
 
 source("pipeline.R")
 # User interface 
@@ -40,23 +43,32 @@ ui<- page_fluid(
                           
                         ))),
              tabPanel("Guide",
-                      "There is stuff in here.\n",
+                      card(
+                        card_header("How to use this website"),
+                      "This is a website created to help reasurchers ID large datasets of moth images",
                       "I just want to have lotsss of info on how to create the csv.",
                       "Have picture files, under a column names Moth_URL.",
                       "The first image will pop up on home screen, it should be a full picture of the setup.",
                       "box the measuring tool to the best of your abilities.",
                       "write the true measurments in whatever unit you want cm, in...anything.",
-                      "Maby have extra info about possible moth species based on location"
+                      "Maby have extra info about possible moth species based on location",),
+                      card(card_header("Do's and Don't's of the website"),
+                           "DO and donot"),
+                      card(card_header("some results "),"YAY, accuracy of the website")
+                      
              ),
-             tabPanel("K-means clustering",
+             tabPanel("Shape Morphology",
                       "Submit the CSV you got from the HOME tab",
-                      fileInput("Results",label="Upload your CSV file"),
-                      plotOutput("k.means")
+                      fileInput("Results",label=""),
+                      card(plotOutput("shape")),
+                      actionButton("k.means", label="K-Means")
              ),
              tabPanel("Timeline",
                       "Submit the CSV you got from the HOME tab",
-                      fileInput("Home2_csv",label="Upload your CSV file"),
-                      plotOutput("timeline_plot")
+                      fileInput("Home2_csv",label=""),
+                      card(plotOutput("timeline_plot")),
+                      selectInput("filter", "Choose your filter", choices=c("Year","Month","Day","Time")),
+                      selectInput("filter2", "Choose your filter", choices=c("Color","Size"))
              ),
              
   ))
@@ -136,12 +148,11 @@ server <- function(input, output) {
     hist(moth$month)
   })
   #=================================================================
-  output$k.means<-renderPlot({
+  output$shape<-renderPlot({
     req(input$Results)   
-    library(tidyr)
-    library(Momocs)
+
     moths<- read.csv(input$Results$datapath)
-    
+    #cat("csv loaded!")
     #ok so in the csv I mushed all the corrdinates together to save space
     #now we have to un mush them 
     translate<- data.frame()
@@ -220,14 +231,14 @@ server <- function(input, output) {
     #list(translate$ID) #I want to remove the repeating numbers
     
     #Lets just see them real quick 
-    panel(Cute_moth_outlines )#some points look rough but honestly it looks pretty nice!
+    #panel(Cute_moth_outlines )#some points look rough but honestly it looks pretty nice!
     #Cute_moth_outlines[1] %>% coo_plot() #cool!
     
     #invalid "xlim" value 
     #The error apparently can happen if it is "Non-Numeric Data"
     
     #So I cannot use the proctustes b/c there are no landmarks!
-    stack(Cute_moth_outlines)
+    #stack(Cute_moth_outlines)
     
     #https://momx.github.io/Momocs/reference/efourier.html
     #coo <- Cute_moth_outlines[2]
@@ -237,10 +248,10 @@ server <- function(input, output) {
     #efi <- efourier_i(ef)
     #coo_draw(efi, border='red', col=NA)
     maybe<-coo_alignxax(Cute_moth_outlines)
-    stack(maybe)
+    #stack(maybe)
     m<-coo_slidedirection(maybe,"right")
     
-    stack(m)
+    #stack(m)
     pls_work<- efourier(m,nb.h= 12,norm=TRUE)
     
     #nb.h=The number of harmonics to use
@@ -252,6 +263,8 @@ server <- function(input, output) {
     tunnel_light<-PCA(pls_work)
     tunnel_light
     plot(tunnel_light,pos.shp="xy",labelspoint=TRUE) #OMG IT WORKEDDD
+    
+    
     
     #ok but BUT I think we have a problem, unlike the bottle image these moths are facing diffrent directions...
     #I should prolly fix this... but HOW 
